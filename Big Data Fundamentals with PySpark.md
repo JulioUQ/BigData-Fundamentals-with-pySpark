@@ -349,6 +349,106 @@ for cont, air in pairRDD_group:
   ```
 
 
+# Adavanced RDD Actions
+
+## reduce() action
+- reduce(func) action is used for aggregating the element of a regular RDD
+- The function should be commutatitive (changing the order of the operands does not change the resutl) and associative.
+- An example of  `reduce()` action in PySpark.
+
+```python
+x = [1, 3, 4, 6]
+RDD = sc.parallelize(x)
+RDD.reduce(lambda x, y : x + y)
+```
+## saveAsTextFile() action
+- `saveAsTextFile()` action saves RDD into a text file inside a directory with each partition as a separate file.
+```python
+RDD.saveaAsTextFile("tempFile")
+```
+- `coalesce()` method can be used to save RDD as a single text file
+```python
+RDD.coalesce(1).saveAsTextFile("tempFile")
+```
+
+## Actions Operations on pair RDDs
+- RDD actions available for PySpark pair RDDs
+- Pair RDD actions leverage the key-value data
+- Few examples of pair RDD actions include:
+
+### countByKey() action
+
+- `countByKey()` only available for type (K, V)
+- `countByKey()` action counts the number of elements for each key
+- Example of `countByKey()` on a simple list
+
+```python
+rdd = sc.parallelize([("a", 1), ("b", 1), ("a", 1)])
+for key, val in rdd.countByKey().items():
+print(key, val)
+```
+
+###  collectAsMap() action
+
+- `collectAsMap()` return the key-value pairs in the RDD as a dictionary
+- Example of `collectAsMap()` on a simple tuple
+```python
+sc.parallelize([(1, 2), (3, 4)]).collectAsMap()
+```
+
+
+# Abstracting Data with DatFrames
+
+## What are PySpark DatFrames?
+
+- PySpark SQL is a Spark library fo structure data. It provides more information about the structure of data and computation.
+- PySpark DataFrame is an immutable distributed collection of data with named columns.
+- Designed for processing both structured (e.g. relational database) and semi-structured data (e.g JSON)
+- Dataframe API is available in Python, R, Scala and Java
+- DataFrames in PySpark support both SQL queries (`SELECT * FROM table`) or expression methods (`df.select()`).
+
+## SparkSession - Entry point for DataFrame API
+
+- SparkContext is the main entry point for creatin rDDs
+- SparkSession provides a single point of entry to interact with Spark DataFrames
+- SparkSession is used to create DataFrame, register DataFrames, execute SQL queries
+- SparkSession is available in PySpark shell as spark
+
+## Creating DataFrames in PySpark
+- Two different methods of creating DatFrames in PySpark
+	- From existing RDDs using SparkSession's createDataFrames() method
+	- From various data sources (CSV, JSON, TXT) using SparkSession's read method
+- Schema controls the data and helps DataFrames to optimize queries
+- Schema provides information about columns name, type of data in the column, empty values etc.,
+
+## Create a Data from RDD
+
+```python
+iphones_RDD 0 sc.parallelize([tuples])
+
+names = [list_of_columns]
+
+iphones_df = spark.createDataFrame(iphones_RDD, names)
+type(iphones-df)
+```
+
+
+## Create a DataFrame from reading a csv/json/txt
+
+```python
+df_csv = spark.read.csv("peaople.csv", header = True, inferSchema=True)
+
+df_json = spark.read.json("people.json")
+
+df_txt = spark.read.txt("people.txt")
+```
+
+- Path to the file and two optional parameters
+- Two optional parameters
+	- header = True, inferSchema = True
+
+
+---
 ---
 
 # Exercises to practise
@@ -594,4 +694,177 @@ for num in Rdd_Reduced.collect(): 
 # Iterate over the result and print the output
 for num in Rdd_Reduced.collect(): 
   print("Key {} has {} Counts".format(num[0], num[1]))
+ ```
+## ReduceBykey and Collect
+
+One of the most popular pair RDD transformations is `reduceByKey()` which operates on key, value (k,v) pairs and merges the values for each key. In this exercise, you'll first create a pair RDD from a list of tuples, then combine the values with the same key and finally print out the result.
+
+Remember, you already have a SparkContext `sc` available in your workspace.
+
+- Create a pair RDD named `Rdd` with tuples `(1,2)`,`(3,4)`,`(3,6)`,`(4,5)`.
+```python
+# Create PairRDD Rdd with key value pairs
+Rdd = sc.parallelize([(1, 2), (3, 4), (3, 6), (4, 5)])
+ ```
+- Transform the `Rdd` with `reduceByKey()` into a pair RDD `Rdd_Reduced` by adding the values with the same key.
+```python
+# Apply reduceByKey() operation on Rdd
+Rdd_Reduced = Rdd.reduceByKey(lambda x, y: x + y)
+ ```
+- Collect the contents of pair RDD `Rdd_Reduced` and iterate to print the output.
+```python
+# Iterate over the result and print the output
+for num in Rdd_Reduced.collect(): 
+    print("Key {} has {} Counts".format(num[0], num[1]))
+ ```
+## SortByKey and Collect
+
+Many times it is useful to sort the pair RDD based on the key (for example word count which you'll see later in the chapter). In this exercise, you'll sort the pair RDD `Rdd_Reduced` that you created in the previous exercise into descending order and print the final output.
+
+Remember, you already have a SparkContext `sc` and `Rdd_Reduced` available in your workspace.
+
+- Sort the `Rdd_Reduced` RDD using the key in descending order.
+```python
+# Sort the reduced RDD with the key by descending order
+Rdd_Reduced_Sort = Rdd_Reduced.sortByKey(ascending=False)
+ ```
+- Collect the contents and iterate to print the output.
+```python
+# Iterate over the result and retrieve all the elements of the RDD
+for num in Rdd_Reduced_Sort.collect():
+    print("Key {} has {} Counts".format(num[0], num[1]))
+ ```
+
+## CountingBykeys
+
+For many datasets, it is important to count the number of keys in a key/value dataset. For example, counting the number of countries where the product was sold or to show the most popular baby names. In this simple exercise, you'll use the `Rdd` that you created earlier and count the number of unique keys in that pair RDD.
+
+Remember, you already have a SparkContext `sc` and `Rdd` available in your workspace.
+
+- `countByKey`and assign the result to a variable `total`.
+```python
+# Count the unique keys
+total = Rdd.countByKey()
+ ```
+- What is the type of `total`?
+```python
+# What is the type of total?
+print("The type of total is", type(total))
+ ```
+- Iterate over the `total` and print the keys and their counts.
+```python
+# Iterate over the total and print the output
+for k, v in total.items(): 
+  print("key", k, "has", v, "counts")
+ ```
+## Create a base RDD and transform it
+
+The volume of unstructured data (log lines, images, binary files) in existence is growing dramatically, and PySpark is an excellent framework for analyzing this type of data through RDDs. In this 3 part exercise, you will write code that calculates the most common words from [Complete Works of William Shakespeare](http://www.gutenberg.org/ebooks/100).
+
+Here are the brief steps for writing the word counting program:
+
+- Create a base RDD from `Complete_Shakespeare.txt` file.
+- Use RDD transformation to create a long list of words from each element of the base RDD.
+- Remove stop words from your data.
+- Create pair RDD where each element is a pair tuple of `('w', 1)`
+- Group the elements of the pair RDD by key (word) and add up their values.
+- Swap the keys (word) and values (counts) so that keys is count and value is the word.
+- Finally, sort the RDD by descending order and print the 10 most frequent words and their frequencies.
+
+In this first exercise, you'll create a base RDD from `Complete_Shakespeare.txt` file and transform it to create a long list of words.
+
+Remember, you already have a SparkContext `sc` already available in your workspace. A `file_path` variable (which is the path to the `Complete_Shakespeare.txt` file) is also loaded for you.
+
+- Create a RDD called `baseRDD` that reads lines from `file_path`.
+```python
+# Create a baseRDD from the file path
+baseRDD = sc.textFile(file_path)
+ ```
+- Transform the `baseRDD` into a long list of words and create a new `splitRDD`.
+```python
+# Split the lines of baseRDD into words
+splitRDD = baseRDD.flatMap(lambda x: x.split())
+ ```
+- Count the total number words in `splitRDD`.
+```python
+# Count the total number of word
+print("Total number of words in splitRDD:", splitRDD.count())
+ ```
+## Remove stop words and reduce the dataset
+
+In this exercise you'll remove stop words from your data. Stop words are common words that are often uninteresting, for example, "I", "the", "a" etc. You can remove many obvious stop words with a list of your own. But for this exercise, you will just remove the stop words from a curated list `stop_words` provided to you in your environment.
+
+After removing stop words, you'll create a pair RDD where each element is a pair tuple `(k, v)` where `k` is the key and `v` is the value. In this example, pair RDD is composed of `(w, 1)` where `w` is for each word in the RDD and 1 is a number. Finally, you'll combine the values with the same key from the pair RDD to count the number of occurrences of each word.
+
+Remember you already have a SparkContext `sc` and `splitRDD` available in your workspace, along with the `stop_words` list variable.
+
+- Filter `splitRDD`, removing stop words listed in the `stop_words` variable.
+```python
+# Filter splitRDD to remove stop words from the stop_words curated list
+splitRDD_no_stop = splitRDD.filter(lambda w: w.lower() not in stop_words)
+ ```
+- Create a pair RDD tuple containing the word (using the `w` iterator) and the number `1` from each word element in `splitRDD`.
+```python
+# Create a tuple of the word (w) and 1 
+splitRDD_no_stop_words = splitRDD_no_stop.map(lambda w: (w, 1))
+ ```
+- Get the count of the number of occurrences of each word (word frequency) in the pair RDD. Use a transformation which operates on key, value (k,v) pairs. Think carefully about which function to use here.
+```python
+# Count of the number of occurrences of each word
+resultRDD = splitRDD_no_stop_words.reduceByKey(lambda x, y: x + y)
+ ```
+# Print word frequencies
+
+After combining the values (counts) with the same key (word), in this exercise, you'll return the first 10 word frequencies. You could have retrieved all the elements at once using collect(), but it is bad practice and not recommended. RDDs can be huge: you may run out of memory and crash your computer..
+
+What if we want to return the top 10 words? For this, first you'll need to swap the key (word) and values (counts) so that keys is count and value is the word. Right now, `result_RDD` has **key as element 0 and value as element 1**. After you swap the key and value in the tuple, you'll sort the pair RDD based on the key (count). This way it is easy to sort the RDD based on the key rather than using `sortByKey` operation in PySpark. Finally, you'll return the top 10 words based on their frequencies from the sorted RDD.
+
+You already have a SparkContext `sc` and `resultRDD` available in your workspace.
+
+- Print the first 10 words and their frequencies from the `resultRDD` RDD.
+```python
+# Display the first 10 words and their frequencies from the input RDD
+for word in resultRDD.take(10):
+    print(word)
+ ```
+- Swap the keys and values in the `resultRDD`.
+```python
+# Swap the keys and values from the input RDD
+resultRDD_swap = resultRDD.map(lambda x: (x[1], x[0]))
+ ```
+- Sort the keys according to descending order.
+```python
+# Sort the keys in descending order
+resultRDD_swap_sort = resultRDD_swap.sortByKey(ascending=False)
+ ```
+- Print the top 10 most frequent words and their frequencies from the sorted RDD.
+```python
+# Show the top 10 most frequent words and their frequencies from the sorted RDD
+for word in resultRDD_swap_sort.take(10):
+    print("{},{}". format(word[1], word[0]))
+ ```
+
+
+## RDD to DataFrame
+
+Similar to RDDs, DataFrames are immutable and distributed data structures in Spark. Even though RDDs are a fundamental data structure in Spark, working with data in DataFrames is easier than in RDDs. So, understanding of how to convert an RDD to a DataFrame is necessary.
+
+In this exercise, you'll first make an RDD using the `sample_list` that is already provided to you. This RDD contains a list of tuples `('Mona',20), ('Jennifer',34),('John',20), ('Jim',26)` with each tuple containing the name of the person and their age. Next, you'll create a DataFrame using the RDD and schema (which is the list of 'Name' and 'Age') and finally confirm the output is a PySpark DataFrame.
+
+Remember, you already have a SparkContext `sc` and SparkSession `spark` available in your workspace.
+
+- Create an RDD from the `sample_list`.
+```python
+# Swap the keys and values from the input RDD
+resultRDD_swap = resultRDD.map(lambda x: (x[1], x[0]))
+ ```
+- Create a PySpark DataFrame using the above RDD and schema.
+```python
+# Swap the keys and values from the input RDD
+resultRDD_swap = resultRDD.map(lambda x: (x[1], x[0]))
+ ```
+- Confirm the output as PySpark DataFrame.
+```python
+# Swap the keys and values from the input RDD
+resultRDD_swap = resultRDD.map(lambda x: (x[1], x[0]))
  ```
